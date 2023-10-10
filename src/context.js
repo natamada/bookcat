@@ -1,5 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
-import { useCallback } from "react";
+import React, { useState, useContext, useEffect, useCallback } from "react";
 
 const TITLE_URL = "https://openlibrary.org/search.json?title=";
 const AUTHOR_URL = "https://openlibrary.org/search.json?author=";
@@ -16,13 +15,17 @@ const AppProvider = ({ children }) => {
     setLoading(true);
     try {
       // Fetch books by title
-      const titleResponse = await fetch(`${TITLE_URL}${searchTerm}`);
-      const titleData = await titleResponse.json();
-      const titleDocs = titleData.docs || [];
+      const [titleResponse, authorResponse] = await Promise.all([
+        fetch(`${TITLE_URL}${searchTerm}`),
+        fetch(`${AUTHOR_URL}${searchTerm}`)
+      ]);
 
-      // Fetch books by author
-      const authorResponse = await fetch(`${AUTHOR_URL}${searchTerm}`);
-      const authorData = await authorResponse.json();
+      const [titleData, authorData] = await Promise.all([
+        titleResponse.json(),
+        authorResponse.json()
+      ]);
+
+      const titleDocs = titleData.docs || [];
       const authorDocs = authorData.docs || [];
 
       // Merge the results from both requests
@@ -48,11 +51,7 @@ const AppProvider = ({ children }) => {
 
       setBooks(mergedBooks);
 
-      if (mergedBooks.length > 1) {
-        setResultTitle("Search Results");
-      } else {
-        setResultTitle("No Books Found");
-      }
+      setResultTitle(mergedBooks.length > 1 ? "Search Results" : "No Books Found");
 
       setLoading(false);
     } catch (error) {
@@ -72,7 +71,6 @@ const AppProvider = ({ children }) => {
         books,
         setSearchTerm,
         resultTitle,
-        setResultTitle,
       }}
     >
       {children}
